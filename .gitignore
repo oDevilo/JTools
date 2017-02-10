@@ -3,12 +3,21 @@
 .project
 .settings/
 .externalToolBuilders/
-*.war
-
 
 # Intellij project files
 *.iml
 .idea/
+
+# .class
+*.class
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
 
 # Others
 target/
