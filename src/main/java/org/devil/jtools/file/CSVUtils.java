@@ -211,48 +211,51 @@ public class CSVUtils {
 	}
 
 	public static <T> List<T> importCsvByObj(File file, Class<T> clazz, String encoding) throws Exception {
-		if (encoding == null) {
-			encoding = DEFAULT_ENCODEING;
-		}
-		InputStreamReader read = new InputStreamReader(new FileInputStream(file), encoding);
-		BufferedReader bufferedReader = new BufferedReader(read);
-		String lineTxt;
+		InputStreamReader read = null;
+		BufferedReader bufferedReader = null;
+		try{
+			if (encoding == null) {
+				encoding = DEFAULT_ENCODEING;
+			}
+			read = new InputStreamReader(new FileInputStream(file), encoding);
+			bufferedReader = new BufferedReader(read);
+			String lineTxt;
 
-		Field[] fields = clazz.getDeclaredFields();
-		List<Method> methods = new ArrayList<Method>();
-		for (Field field : fields) {
-			Method method = null;
-			try {
+			Field[] fields = clazz.getDeclaredFields();
+			List<Method> methods = new ArrayList<Method>();
+			for (Field field : fields) {
+				Method method = null;
 				PropertyDescriptor prop = new PropertyDescriptor(field.getName(), clazz);
 				method = prop.getWriteMethod();
-			} catch (Exception e) {
-				// TODO: handle exception
+				if (method != null)
+					methods.add(method);
 			}
-			if (method != null)
-				methods.add(method);
-		}
 
-		List<T> result = new ArrayList<T>();
-		while ((lineTxt = bufferedReader.readLine()) != null) {
-			if (!lineTxt.trim().equals("")) {
-				String[] strArr = lineTxt.trim().split(",(?=([^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)", -1); // 双引号内的逗号不分割,双引号外的逗号进行分割
-				if (strArr.length != methods.size())
-					throw new RuntimeException("methods length is not match csv size");
+			List<T> result = new ArrayList<T>();
+			while ((lineTxt = bufferedReader.readLine()) != null) {
+				if (!lineTxt.trim().equals("")) {
+					String[] strArr = lineTxt.trim().split(",(?=([^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)", -1); // 双引号内的逗号不分割,双引号外的逗号进行分割
+					if (strArr.length != methods.size())
+						throw new RuntimeException("methods length is not match csv size");
 
-				T obj = clazz.newInstance();
-				for (int i = 0; i < strArr.length; i++) {
-					// strArr[i] = clearStartAndEndQuote(strArr[i]);
-					String data = clearStartAndEndQuote(strArr[i]);
-					Class<?>[] types = methods.get(i).getParameterTypes();
-					methods.get(i).invoke(obj, StringUtils.transformStringToObj(data, types[0]));
+					T obj = clazz.newInstance();
+					for (int i = 0; i < strArr.length; i++) {
+						// strArr[i] = clearStartAndEndQuote(strArr[i]);
+						String data = clearStartAndEndQuote(strArr[i]);
+						Class<?>[] types = methods.get(i).getParameterTypes();
+						methods.get(i).invoke(obj, StringUtils.transformStringToObj(data, types[0]));
+					}
+					result.add(obj);
 				}
-				result.add(obj);
 			}
+			
+			return result;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		} finally {
+			bufferedReader.close();
+			read.close();
 		}
-
-		bufferedReader.close();
-		read.close();
-		return result;
 	}
 
 	/**
